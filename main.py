@@ -431,7 +431,7 @@ while run:
 
     if selection != 100 and not game_over:
         elapsed_time = white_move_clock.tick() if turn_step < 2 else black_move_clock.tick()
-        print("Elapsed Time:", elapsed_time)
+        # print("Elapsed Time:", elapsed_time)
         if elapsed_time > move_timeout:
             winner = 'black' if turn_step < 2 else 'white'
             game_over = True
@@ -441,7 +441,7 @@ while run:
         remaining_time = move_timeout - elapsed_time
         remaining_seconds = max(0, remaining_time // 1000) 
         # Convert milliseconds to seconds
-        print(remaining_seconds)
+        # print(remaining_seconds)
         text = font.render(f"Time: {remaining_seconds} seconds", True, (255, 255, 255))
         screen.blit(text, (10, 10))
 
