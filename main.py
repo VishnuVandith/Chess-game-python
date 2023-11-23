@@ -4,6 +4,7 @@
 import pygame
 
 pygame.init()
+move_timeout = 60000
 WIDTH = 1000
 HEIGHT = 900
 screen = pygame.display.set_mode([WIDTH, HEIGHT])
@@ -12,6 +13,8 @@ font = pygame.font.Font('freesansbold.ttf', 20)
 medium_font = pygame.font.Font('freesansbold.ttf', 40)
 big_font = pygame.font.Font('freesansbold.ttf', 50)
 timer = pygame.time.Clock()
+font = pygame.font.Font(None, 36)
+countdown_clock = pygame.time.Clock()
 fps = 60
 # game variables and images
 white_pieces = ['rook', 'knight', 'bishop', 'king', 'queen', 'bishop', 'knight', 'rook',
@@ -351,25 +354,109 @@ def draw_game_over():
     screen.blit(font.render(f'{winner} won the game!', True, 'white'), (210, 210))
     screen.blit(font.render(f'Press ENTER to Restart!', True, 'white'), (210, 240))
 
+def handle_mouse_click(event):
+    global turn_step, selection, valid_moves, white_locations, black_locations, captured_pieces_white, captured_pieces_black, black_options, white_options
+
+    x_coord = event.pos[0] // 100
+    y_coord = event.pos[1] // 100
+    click_coords = (x_coord, y_coord)
+
+    if turn_step <= 1:
+        if click_coords == (8, 8) or click_coords == (9, 8):
+            winner = 'black'
+        if click_coords in white_locations:
+            selection = white_locations.index(click_coords)
+            if turn_step == 0:
+                turn_step = 1
+        if click_coords in valid_moves and selection != 100:
+            white_locations[selection] = click_coords
+            if click_coords in black_locations:
+                black_piece = black_locations.index(click_coords)
+                captured_pieces_white.append(black_pieces[black_piece])
+                if black_pieces[black_piece] == 'king':
+                    winner = 'white'
+                black_pieces.pop(black_piece)
+                black_locations.pop(black_piece)
+            black_options = check_options(black_pieces, black_locations, 'black')
+            white_options = check_options(white_pieces, white_locations, 'white')
+            turn_step = 2
+            selection = 100
+            valid_moves = []
+
+    if turn_step > 1:
+        if click_coords == (8, 8) or click_coords == (9, 8):
+            winner = 'white'
+        if click_coords in black_locations:
+            selection = black_locations.index(click_coords)
+            if turn_step == 2:
+                turn_step = 3
+        if click_coords in valid_moves and selection != 100:
+            black_locations[selection] = click_coords
+            if click_coords in white_locations:
+                white_piece = white_locations.index(click_coords)
+                captured_pieces_black.append(white_pieces[white_piece])
+                if white_pieces[white_piece] == 'king':
+                    winner = 'black'
+                white_pieces.pop(white_piece)
+                white_locations.pop(white_piece)
+            black_options = check_options(black_pieces, black_locations, 'black')
+            white_options = check_options(white_pieces, white_locations, 'white')
+            turn_step = 0
+            selection = 100
+            valid_moves = []
 
 # main game loop
 black_options = check_options(black_pieces, black_locations, 'black')
 white_options = check_options(white_pieces, white_locations, 'white')
 run = True
+white_move_clock = pygame.time.Clock()
+black_move_clock = pygame.time.Clock()
 while run:
     timer.tick(fps)
+
     if counter < 30:
         counter += 1
     else:
         counter = 0
+
     screen.fill('dark gray')
     draw_board()
     draw_pieces()
     draw_captured()
     draw_check()
+
     if selection != 100:
         valid_moves = check_valid_moves()
         draw_valid(valid_moves)
+
+    if selection != 100 and not game_over:
+        elapsed_time = white_move_clock.tick() if turn_step < 2 else black_move_clock.tick()
+        print("Elapsed Time:", elapsed_time)
+        if elapsed_time > move_timeout:
+            winner = 'black' if turn_step < 2 else 'white'
+            game_over = True
+            draw_game_over()
+    if selection != 100 and not game_over:
+        elapsed_time = white_move_clock.tick() if turn_step < 2 else black_move_clock.tick()
+        remaining_time = move_timeout - elapsed_time
+        remaining_seconds = max(0, remaining_time // 1000) 
+        # Convert milliseconds to seconds
+        print(remaining_seconds)
+        text = font.render(f"Time: {remaining_seconds} seconds", True, (255, 255, 255))
+        screen.blit(text, (10, 10))
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not game_over:
+            handle_mouse_click(event)
+
+        if event.type == pygame.KEYDOWN and game_over:
+            handle_key_down(event)
+
+    if winner and not game_over:
+        game_over = True
+        draw_game_over()
     # event handling
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -443,6 +530,7 @@ while run:
     if winner != '':
         game_over = True
         draw_game_over()
-
+    
     pygame.display.flip()
+    countdown_clock.tick(60)
 pygame.quit()

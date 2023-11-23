@@ -21,10 +21,16 @@ black_locations = [(0, 7), (1, 7), (2, 7), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7
                    (0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6), (6, 6), (7, 6)]
 captured_pieces_white = []
 captured_pieces_black = []
+
+
 # 0 - whites turn no selection: 1-whites turn piece selected: 2- black turn no selection, 3 - black turn piece selected
 turn_step = 0
 selection = 100
 valid_moves = []
+
+move_timer = 30  # Initial time for each move in seconds
+current_timer = move_timer
+timer_running = False
 # load in game piece images (queen, king, rook, bishop, knight, pawn) x 2
 black_queen = pygame.image.load('assets/images/black queen.png')
 black_queen = pygame.transform.scale(black_queen, (80, 80))
