@@ -80,7 +80,42 @@ counter = 0
 winner = ''
 game_over = False
 
+def test_checkmate_scenario():
+    global turn_step, selection, valid_moves, white_locations, black_locations, captured_pieces_white, captured_pieces_black, black_options, white_options
 
+    # Set up a specific scenario for the test case
+    white_pieces = ['king', 'rook', 'king']
+    white_locations = [(0, 0), (7, 0), (5, 7)]
+
+    black_pieces = ['rook', 'king']
+    black_locations = [(7, 7), (6, 5)]
+
+    turn_step = 0
+    selection = 100
+    valid_moves = []
+    black_options = check_options(black_pieces, black_locations, 'black')
+    white_options = check_options(white_pieces, white_locations, 'white')
+    
+def is_check(pieces, locations, options):
+    king_index = pieces.index('king')
+    king_location = locations[king_index]
+    return king_location in options
+
+def is_checkmate(pieces, locations, options):
+    for i in range(len(pieces)):
+        piece = pieces[i]
+        original_location = locations[i]
+        for move in options[i]:
+            # Simulate the move
+            locations[i] = move
+            # Check if the player is still in check after the move
+            if not is_check(pieces, locations, options):
+                # The player is not in checkmate
+                locations[i] = original_location  # Restore the original location
+                return False
+        # Restore the original location for the current piece
+        locations[i] = original_location
+    return True
 # draw main game board
 def draw_board():
     for i in range(32):
@@ -444,7 +479,28 @@ while run:
         # print(remaining_seconds)
         text = font.render(f"Time: {remaining_seconds} seconds", True, (255, 255, 255))
         screen.blit(text, (10, 10))
+    if selection != 100:
+        valid_moves = check_valid_moves()
+        draw_valid(valid_moves)
 
+    if selection != 100 and not game_over:
+        elapsed_time = white_move_clock.tick() if turn_step < 2 else black_move_clock.tick()
+        if elapsed_time > move_timeout:
+            winner = 'black' if turn_step < 2 else 'white'
+            game_over = True
+            draw_game_over()
+        if elapsed_time > move_timeout and not game_over:
+            winner = 'black' if turn_step < 2 else 'white'
+            game_over = True
+            draw_game_over()
+    if turn_step < 2:
+        if is_checkmate(white_pieces, white_locations, black_options):
+            winner = 'black'
+            game_over = True
+    elif turn_step >= 2:
+        if is_checkmate(black_pieces, black_locations, white_options):
+            winner = 'white'
+            game_over = True        
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
@@ -453,6 +509,31 @@ while run:
 
         if event.type == pygame.KEYDOWN and game_over:
             handle_key_down(event)
+    if selection != 100:
+            valid_moves = check_valid_moves()
+
+            if selection != 100 and not game_over:
+                elapsed_time = white_move_clock.tick() if turn_step < 2 else black_move_clock.tick()
+            if elapsed_time > move_timeout:
+                winner = 'black' if turn_step < 2 else 'white'
+                game_over = True
+                draw_game_over()
+
+            if turn_step < 2:
+                if is_checkmate(white_pieces, white_locations, black_options):
+                    winner = 'black'
+                    game_over = True
+            elif turn_step >= 2:
+                if is_checkmate(black_pieces, black_locations, white_options):
+                    winner = 'white'
+                    game_over = True
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not game_over:
+                    handle_mouse_click(event)
+        
 
     if winner and not game_over:
         game_over = True
@@ -528,9 +609,11 @@ while run:
                 white_options = check_options(white_pieces, white_locations, 'white')
 
     if winner != '':
+        test_checkmate_scenario()
         game_over = True
         draw_game_over()
     
     pygame.display.flip()
     countdown_clock.tick(60)
+    
 pygame.quit()
